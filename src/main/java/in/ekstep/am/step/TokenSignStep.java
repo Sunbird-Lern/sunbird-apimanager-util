@@ -6,7 +6,7 @@ import in.ekstep.am.builder.TokenSignResponseBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import java.util.Date;
+import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -26,7 +26,7 @@ public class TokenSignStep implements TokenStep {
 
     private String currentToken, kid, iss;
     private Map headerData, bodyData;
-    private long tokenValidity, offlineTokenValidity, currentTime, tokenWasIssuedAt;
+    private long accessTokenValidity, refreshTokenValidity, offlineTokenValidity, currentTime, tokenWasIssuedAt;
 
     public TokenSignStep(TokenSignRequest token, TokenSignResponseBuilder tokenSignResponseBuilder, KeyManager keyManager) {
         this.token = token;
@@ -67,8 +67,8 @@ public class TokenSignStep implements TokenStep {
             return false;
         }
 
-        if (!bodyData.get("typ").equals("Offline")) {
-            log.error(format("Not an offline token: {0}, invalidToken: {1}", bodyData.get("typ"), currentToken));
+        if (!bodyData.get("typ").equals("Offline") && !bodyData.get("typ").equals("Refresh")) {
+            log.error(format("Not an offline or refresh token: {0}, invalidToken: {1}", bodyData.get("typ"), currentToken));
             return false;
         }
 
@@ -91,29 +91,40 @@ public class TokenSignStep implements TokenStep {
             }
         }
 
-        tokenValidity = Long.parseLong(keyManager.getValueFromKeyMetaData("access.token.validity"));
-        offlineTokenValidity =  Long.parseLong(keyManager.getValueFromKeyMetaData("refresh.token.offline.validity"));
+        accessTokenValidity = Long.parseLong(keyManager.getValueFromKeyMetaData("access.token.validity"));
+        refreshTokenValidity = Long.parseLong(keyManager.getValueFromKeyMetaData("refresh.token.validity"));
         currentTime = System.currentTimeMillis() / 1000;
-        tokenWasIssuedAt = ((Double) bodyData.get("iat")).longValue();
-        long tokenValidTill = tokenWasIssuedAt + offlineTokenValidity;
 
-        if(tokenValidTill < currentTime){
-            log.error("Offline token expired on: " + tokenValidTill + ", invalidToken: " + currentToken);
-            return false;
+        if (bodyData.get("typ").equals("Offline")) {
+            offlineTokenValidity = Long.parseLong(keyManager.getValueFromKeyMetaData("refresh.token.offline.validity"));
+            tokenWasIssuedAt = ((Double) bodyData.get("iat")).longValue();
+            long tokenValidTill = tokenWasIssuedAt + offlineTokenValidity;
+
+            if (tokenValidTill < currentTime) {
+                log.error("Offline token expired on: " + tokenValidTill + ", invalidToken: " + currentToken);
+                return false;
+            }
+
+            if (tokenWasIssuedAt > currentTime) {
+                log.error("Offline token issued at a future date: " + tokenWasIssuedAt + ", invalidToken: " + currentToken);
+                return false;
+            }
         }
-
-        if(tokenWasIssuedAt > currentTime) {
-            log.error("Offline token issued at a future date: " + tokenWasIssuedAt + ", invalidToken: " + currentToken);
-            return false;
+        else {
+            BigDecimal expiry = new BigDecimal(bodyData.get("exp").toString());
+            long refreshTokenExpiry = expiry.longValueExact();
+            if (currentTime > refreshTokenExpiry) {
+                log.error("Refresh token expired on: " + refreshTokenExpiry + ", invalidToken: " + currentToken);
+                return false;
+            }
         }
-
         return true;
     }
 
-    private void generateNewJwtToken() {
+    private void generateNewAccessToken() {
         Map<String, String> header = new HashMap<>();
         Map<String, Object> body = new HashMap<>();
-        long exp = currentTime + tokenValidity;
+        long exp = currentTime + accessTokenValidity;
         keyData = keyManager.getRandomKey("access");
 
         header.put("alg", (String) headerData.get("alg"));
@@ -127,22 +138,54 @@ public class TokenSignStep implements TokenStep {
         body.put("typ", "Bearer");
 
         tokenSignResponseBuilder.setAccessToken(JWTUtil.createRS256Token(header, body, keyData.getPrivateKey()));
-        tokenSignResponseBuilder.setRefreshToken(currentToken);
-        tokenSignResponseBuilder.setExpiresIn(tokenValidity);
-        tokenSignResponseBuilder.setRefreshExpiresIn(0);
+        tokenSignResponseBuilder.setExpiresIn(accessTokenValidity);
+    }
 
-        long refreshTokenLogOlderThan = Long.parseLong(keyManager.getValueFromKeyMetaData("refresh.token.log.older.than"));
-        long diffInDays = (currentTime - tokenWasIssuedAt) / (60 * 60 * 24);
-        if(diffInDays >= refreshTokenLogOlderThan)
-            log.info("Token issued before: " + diffInDays + ", UID: " + body.get("sub") + ", aud: " + body.get("aud") + ", exp: " + body.get("exp") + ", iat: " + body.get("iat"));
-        else
-            log.info("Token issued for UID: " + body.get("sub") + ", aud: " + body.get("aud") + ", exp: " + body.get("exp") + ", iat: " + body.get("iat"));
+    private void generateNewRefreshToken() {
+        Map<String, String> header = new HashMap<>();
+        Map<String, Object> body = new HashMap<>();
+        long exp;
+        if (bodyData.get("typ").equals("Offline")) {
+            exp = 0;
+        }
+        else {
+            exp = currentTime + refreshTokenValidity;
+        }
+
+        header.put("alg", (String) headerData.get("alg"));
+        header.put("typ", (String) headerData.get("typ"));
+        header.put("kid", keyData.getKeyId());
+        body.put("exp", exp);
+        body.put("iat", currentTime);
+        body.put("iss", iss);
+        body.put("aud", bodyData.get("aud"));
+        body.put("sub", bodyData.get("sub"));
+        if (bodyData.get("typ").equals("Offline")) {
+            body.put("typ", "Offline");
+        }
+        else {
+            body.put("typ", "Refresh");
+        }
+
+        tokenSignResponseBuilder.setRefreshToken(JWTUtil.createRS256Token(header, body, keyData.getPrivateKey()));
+        tokenSignResponseBuilder.setRefreshExpiresIn(refreshTokenValidity);
+
+        if (bodyData.get("typ").equals("Offline")) {
+            long refreshTokenLogOlderThan = Long.parseLong(keyManager.getValueFromKeyMetaData("refresh.token.log.older.than"));
+            long diffInDays = (currentTime - tokenWasIssuedAt) / (60 * 60 * 24);
+            if (diffInDays >= refreshTokenLogOlderThan)
+                log.info("Token issued before: " + diffInDays + ", UID: " + body.get("sub") + ", aud: " + body.get("aud") + ", exp: " + body.get("exp") + ", iat: " + body.get("iat"));
+            else
+                log.info("Token issued for UID: " + body.get("sub") + ", aud: " + body.get("aud") + ", exp: " + body.get("exp") + ", iat: " + body.get("iat"));
+        }
     }
 
     @Override
     public void execute() {
-        if(isJwtTokenValid())
-            generateNewJwtToken();
+        if(isJwtTokenValid()) {
+            generateNewAccessToken();
+            generateNewRefreshToken();
+        }
         else
             tokenSignResponseBuilder.markFailure("invalid_grant", "invalid_grant");
     }
