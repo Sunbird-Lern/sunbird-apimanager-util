@@ -97,7 +97,8 @@ public class TokenSignStep implements TokenStep {
 
         if (bodyData.get("typ").equals("Offline")) {
             offlineTokenValidity = Long.parseLong(keyManager.getValueFromKeyMetaData("refresh.token.offline.validity"));
-            tokenWasIssuedAt = ((Double) bodyData.get("iat")).longValue();
+            BigDecimal iat = new BigDecimal(bodyData.get("iat").toString());
+            tokenWasIssuedAt = iat.longValueExact();
             long tokenValidTill = tokenWasIssuedAt + offlineTokenValidity;
 
             if (tokenValidTill < currentTime) {
