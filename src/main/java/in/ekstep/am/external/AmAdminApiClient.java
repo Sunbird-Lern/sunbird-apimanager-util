@@ -37,68 +37,8 @@ public class AmAdminApiClient implements AmAdminApi {
   }
 
   @Override
-  public AmResponse getConsumer(String username) throws Exception {
-    Request request = new Request.Builder()
-        .url(format("{0}/consumers/{1}/", amAdminApiEndpoint, username))
-        .get()
-        .build();
-
-    return executeRequest(request);
-  }
-
-  @Override
-  public AmResponse registerConsumer(String username) throws Exception {
-    Request request = new Request.Builder()
-        .url(amAdminApiEndpoint + "/consumers/")
-        .post(FormBody.create(FORM_MEDIA_TYPE, format("username={0}", username)))
-        .build();
-    return executeRequest(request);
-  }
-
-  @Override
-  public AmResponse associateConsumerToApiGroups(String username, String group) throws Exception {
-    Request request = new Request.Builder()
-        .url(format(amAdminApiEndpoint + "/consumers/{0}/acls/", username))
-        .post(FormBody.create(FORM_MEDIA_TYPE, format("group={0}", group)))
-        .build();
-
-    return executeRequest(request);
-  }
-
-  @Override
-  public AmResponse getConsumerGroups(String username) throws Exception {
-    Request request = new Request.Builder()
-        .url(format(amAdminApiEndpoint + "/consumers/{0}/acls/", username))
-        .get()
-        .build();
-
-    return executeRequest(request);
-  }
-
-  @Override
-  public AmResponse deleteConsumerGroup(String username, String aclId) throws Exception {
-
-    Request request = new Request.Builder()
-        .url(format(amAdminApiEndpoint + "/consumers/{0}/acls/{1}", username, aclId))
-        .delete()
-        .build();
-    return executeRequest(request);
-  }
-
-  @Override
   public AmResponse getCredential(String username, String key) throws Exception {
     String url = format(amAdminApiEndpoint + "/consumers/{0}/jwt/{1}", username, key);
-    Request request = new Request.Builder()
-        .url(url)
-        .get()
-        .build();
-
-    return executeRequest(request);
-  }
-
-  @Override
-  public AmResponse getCredentials(String username) throws Exception {
-    String url = format(amAdminApiEndpoint + "/consumers/{0}/jwt/", username);
     Request request = new Request.Builder()
         .url(url)
         .get()

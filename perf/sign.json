@@ -1,0 +1,34 @@
+{
+  "id": "ekstep.signing.sign.payload",
+  "ver": "1.0",
+  "ts": "2020-03-17T22:24:31+05:30",
+  "params": {
+    "did": "",
+    "key": "",
+    "msgid": ""
+  },
+  "request": {
+    "data": [
+      {
+        "parentId": "logged_in_user_UUID",
+        "sub": "managed_user_UUID1"
+      },
+      {
+        "parentId": "logged_in_user_UUID",
+        "sub": "managed_user_UUID2"
+      },
+      {
+        "parentId": "logged_in_user_UUID",
+        "sub": "managed_user_UUID3"
+      },
+      {
+        "parentId": "logged_in_user_UUID",
+        "sub": "managed_user_UUID4"
+      },
+      {
+        "parentId": "logged_in_user_UUID",
+        "sub": "managed_user_UUID5"
+      }
+    ]
+  }
+}

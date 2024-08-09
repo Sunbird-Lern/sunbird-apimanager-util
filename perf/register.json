@@ -1,0 +1,8 @@
+{
+  "id": "ekstep.genie.device.register",
+  "ver": "1.0",
+  "ts": "2020-03-17T22:24:31+05:30",
+  "request": {
+    "key": "logged_in_user_UUID"
+  }
+}

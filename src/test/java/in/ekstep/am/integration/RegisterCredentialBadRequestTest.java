@@ -1,7 +1,6 @@
 package in.ekstep.am.integration;
 
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
-import in.ekstep.am.builders.GrantConsumerRequestBuilder;
 import in.ekstep.am.builders.RegisterCredentialRequestBuilder;
 import io.restassured.http.ContentType;
 import org.junit.Before;

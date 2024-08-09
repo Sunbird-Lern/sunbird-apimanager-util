@@ -12,19 +12,8 @@ public interface AmAdminApi {
 
   Response determineHealth() throws Exception;
 
-  AmResponse getConsumer(String username) throws Exception;
-
-  AmResponse registerConsumer(String username) throws Exception;
-
-  AmResponse associateConsumerToApiGroups(String username, String groups) throws Exception;
-
-  AmResponse getConsumerGroups(String username) throws Exception;
-
-  AmResponse deleteConsumerGroup(String username, String aclId) throws Exception;
-
   AmResponse createCredential(String username, String key) throws Exception;
 
   AmResponse getCredential(String username, String key) throws Exception;
 
-  AmResponse getCredentials(String username) throws Exception;
 }

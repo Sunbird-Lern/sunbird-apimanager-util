@@ -40,7 +40,7 @@ configurations {
 dependencies {
   compile('org.springframework.boot:spring-boot-starter')
   compile("org.springframework.boot:spring-boot-starter-web")
-  compile("org.springframework.boot:spring-boot-starter-jetty:1.5.2.RELEASE")
+  compile('org.apache.tomcat.embed:tomcat-embed-jasper:8.0.47')
   compile("com.google.code.gson:gson:2.8.6")
   compile("com.squareup.okhttp3:okhttp:3.6.0")
   compile("org.hibernate:hibernate-validator")
@@ -51,6 +51,7 @@ dependencies {
   }
   compile("io.dropwizard.metrics:metrics-core")
   compile("io.dropwizard.metrics:metrics-annotation")
+  compile("org.apache.commons:commons-collections4:4.4")
 
   testCompile('io.rest-assured:rest-assured:3.0.2')
   testCompile('org.springframework.boot:spring-boot-starter-test')

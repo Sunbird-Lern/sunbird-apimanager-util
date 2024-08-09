@@ -1,0 +1,26 @@
+version: '3.5'
+services:
+  adminutil:
+    build: .
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 4000M
+    ports:
+      - "4000:4000"
+    environment:
+      - am.admin.api.jwt.basepath=/run/secrets/
+      - am.admin.api.jwt.keyprefix=device
+      - am.admin.api.jwt.keycount=3
+    secrets:
+      - device0
+      - device1
+      - device2
+secrets:
+  device0:
+    file: /tmp/device0
+  device1:
+    file: /tmp/device1
+  device2:
+    file: /tmp/device2
