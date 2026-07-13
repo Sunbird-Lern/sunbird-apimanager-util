@@ -20,7 +20,7 @@ FROM ${DHI_IMAGE_RUNTIME}
 COPY --from=shell /lib/ld-musl-x86_64.so.1 /lib/ld-musl-x86_64.so.1
 COPY --from=shell /bin/busybox /bin/sh
 COPY --from=build /opt/app /opt/app
-# EXPOSE 4000
+EXPOSE 4000
 
 WORKDIR /opt/app
 
