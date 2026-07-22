@@ -7,10 +7,12 @@ import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
-import java.io.FileInputStream;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.security.KeyFactory;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.SecureRandom;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
@@ -21,6 +23,7 @@ import java.util.Map;
 public class KeyManager {
     private final Logger log = LoggerFactory.getLogger(this.getClass());
     private static final String SEPARATOR = "_";
+    private static final SecureRandom RNG = new SecureRandom();
     private Map<String, KeyData> keyMap = new HashMap<String, KeyData>();
     private Map<String, String> keyMetadata = new HashMap<>();
 
@@ -74,16 +77,13 @@ public class KeyManager {
         int keyCount = Integer.parseInt(keyMetadata.get(keyName + SEPARATOR + "keyCount"));
         int keyStart = Integer.parseInt(keyMetadata.get(keyName + SEPARATOR + "keyStart"));
         String keyPrefix = keyMetadata.get(keyName + SEPARATOR + "keyPrefix");
-        int randomKeyId = (int) (Math.random() * keyCount);
+        int randomKeyId = RNG.nextInt(keyCount);
         int keyId = keyStart + randomKeyId;
         return keyMap.get(keyPrefix + keyId);
     }
 
     private PrivateKey loadPrivateKey(String path) throws Exception {
-        FileInputStream in = new FileInputStream(path);
-        byte[] keyBytes = new byte[in.available()];
-        in.read(keyBytes);
-        in.close();
+        byte[] keyBytes = Files.readAllBytes(Paths.get(path));
 
         String privateKey = new String(keyBytes, "UTF-8");
         privateKey = privateKey
@@ -99,10 +99,7 @@ public class KeyManager {
     }
 
     private PublicKey loadPublicKey(String path) throws Exception {
-        FileInputStream in = new FileInputStream(path);
-        byte[] keyBytes = new byte[in.available()];
-        in.read(keyBytes);
-        in.close();
+        byte[] keyBytes = Files.readAllBytes(Paths.get(path));
 
         String publicKey = new String(keyBytes, "UTF-8");
         publicKey = publicKey
