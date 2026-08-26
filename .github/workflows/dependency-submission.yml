@@ -1,0 +1,32 @@
+name: Dependency Submission (Gradle)
+
+on:
+  push:
+    branches: ["master"]
+  pull_request:
+    branches: ["master"]
+
+permissions:
+  contents: write
+
+jobs:
+  dependency-submission:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: '8'
+          distribution: 'temurin'
+
+      - name: Build with Gradle
+        run: |
+          chmod +x ./gradlew
+          ./gradlew build --info -x test
+
+      - name: Submit Gradle Dependencies
+        uses: gradle/actions/dependency-submission@v4
+        with:
+          build-scan-publish: false
